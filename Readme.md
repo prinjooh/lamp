@@ -8,7 +8,7 @@
 * 服务器必须配置好软件源和可连接外网
 * 必须具有系统 Root 权限
 * 建议使用干净系统全新安装
-* 日期：2015 年 12 月 28 日
+* 日期：2015 年 12 月 31 日
 
 ## 关于本脚本
 * 支持 PHP 自带所有组件；
@@ -29,8 +29,8 @@
 
 ## 将会安装
 *  1、Apache 2.4.18
-*  2、MySQL 5.6.28, MySQL 5.5.47, MariaDB 5.5.47, MariaDB 10.0.23 （四选一安装）
-*  3、PHP 5.3.29, PHP 5.4.45, PHP 5.5.30, PHP 5.6.16, PHP 7.0.1 （五选一安装）
+*  2、MySQL 5.5.47, MySQL 5.6.28, MySQL 5.7.10, MariaDB 5.5.47, MariaDB 10.0.23, MariaDB 10.1.10 （6 选 1 安装）
+*  3、PHP 5.3.29, PHP 5.4.45, PHP 5.5.30, PHP 5.6.16, PHP 7.0.1 （5 选 1 安装）
 *  4、phpMyAdmin 4.4.15.2
 *  5、OCI8 2.0.10 （可选安装）
 *  6、Xcache 3.2.0 （可选安装）
@@ -74,9 +74,7 @@
 * 10、（可选安装）执行脚本 mongodb.sh 安装 MongoDB 的 PHP 扩展。（命令：`./mongodb.sh`）
 * 11、（可选安装）执行脚本 redis.sh 安装 Redis Server 及其 PHP 扩展。（命令：`./redis.sh`）
 * 12、（升级脚本）执行脚本 upgrade_php.sh 将会升级 PHP 和 phpMyAdmin 至最新版本。(命令：`./upgrade_php.sh | tee upgrade_php.log`)
-* 13、（升级脚本）执行脚本 upgrade_mysql.sh 将会升级 MySQL 至已安装版本的最新版本。(命令：`./upgrade_mysql.sh | tee upgrade_mysql.log`)
-* 14、（升级脚本）执行脚本 upgrade_mariadb.sh 将会升级 MariaDB 至已安装版本的最新版本。(命令：`./upgrade_mariadb.sh | tee upgrade_mariadb.log`)
-* 15、（升级脚本）执行脚本 upgrade_apache.sh 将会升级 Apache 至已安装版本的最新版本。(命令：`./upgrade_apache.sh | tee upgrade_apache.log`)
+* 13、（升级脚本）执行脚本 upgrade_apache.sh 将会升级 Apache 至已安装版本的最新版本。(命令：`./upgrade_apache.sh | tee upgrade_apache.log`)
 
 ### 关于 upgrade_apache.sh
 
@@ -93,22 +91,6 @@
 **使用方法：**
 
     ./upgrade_php.sh 2>&1 | tee upgrade_php.log
-
-### 关于 upgrade_mysql.sh
-
-新增 upgrade_mysql.sh 脚本，目的是为了自动检测和升级 MySQL 。升级之前会自动备份全部数据库，在升级完成之后再将备份恢复。
-
-**使用方法：**
-
-    ./upgrade_mysql.sh 2>&1 | tee upgrade_mysql.log
-
-### 关于 upgrade_mariadb.sh
-
-新增 upgrade_mariadb.sh 脚本，目的是为了自动检测和升级 MariaDB。升级之前自动备份全部数据库，在升级完成之后再将备份恢复。
-
-**使用方法：**
-
-    ./upgrade_mariadb.sh 2>&1 | tee upgrade_mariadb.log
 
 ### 注意事项
 
@@ -155,17 +137,22 @@
 
 ##程序目录：
 
-* MySQL 安装目录: /usr/local/mysql
-* MySQL 数据库目录：/usr/local/mysql/data（默认路径，安装时可更改）
-* MariaDB 安装目录: /usr/local/mariadb
-* MariaDB 数据库目录：/usr/local/mariadb/data（默认路径，安装时可更改）
+* MySQL 数据库目录：/var/lib/mysql（ Yum 安装 MySQL 后的默认路径）
+* MariaDB 数据库目录：/var/lib/mysql（ Yum 安装 MariaDB 后的默认路径）
 * PHP 安装目录: /usr/local/php
 * Apache 安装目录： /usr/local/apache
 
+**备注：**
+关于安装 MySQL 或 MariaDB ，使用的是官方网站自带的 Repository 来 Yum 安装的。
+
 ##命令一览：
-* MySQL 或 MariaDB 命令:
+* MySQL 命令:
 
         /etc/init.d/mysqld(start|stop|restart|status)
+
+* MariaDB 命令:
+
+        /etc/init.d/mysql(start|stop|restart|status)
 
 * Apache 命令:
 
@@ -185,4 +172,4 @@
 
 如果你在安装后使用遇到问题，请访问项目主页 [https://lamp.sh](https://lamp.sh/support.html) 寻求帮助。
 
-Copyright (C) 2013 - 2015 Teddysun <i@teddysun.com>
+Copyright (C) 2013 - 2016 Teddysun <i@teddysun.com>
