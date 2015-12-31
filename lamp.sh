@@ -14,16 +14,19 @@ StartDateSecond=''
 # PHP disable fileinfo
 PHPDisable=''
 # Software Version
-MySQLVersion='mysql-5.6.28'
-MySQLVersion2='mysql-5.5.47'
-MariaDBVersion='mariadb-5.5.47'
+MySQLVersion1='mysql-5.5.47'
+MySQLVersion2='mysql-5.6.28'
+MySQLVersion3='mysql-5.7.10'
+MariaDBVersion1='mariadb-5.5.47'
 MariaDBVersion2='mariadb-10.0.23'
-PHPVersion='php-5.4.45'
+MariaDBVersion3='mariadb-10.1.10'
+PHPVersion1='php-5.4.45'
 PHPVersion2='php-5.3.29'
 PHPVersion3='php-5.5.30'
 PHPVersion4='php-5.6.16'
 PHPVersion5='php-7.0.1'
 ApacheVersion='httpd-2.4.18'
+phpMyAdminVersion='phpMyAdmin-4.4.15.2-all-languages'
 aprVersion='apr-1.5.2'
 aprutilVersion='apr-util-1.5.4'
 libiconvVersion='libiconv-1.14'
@@ -34,7 +37,6 @@ re2cVersion='re2c-0.13.6'
 pcreVersion='pcre-8.37'
 libeditVersion='libedit-20150325-3.1'
 imapVersion='imap-2007f'
-phpMyAdminVersion='phpMyAdmin-4.4.15.2-all-languages'
 # Current folder
 cur_dir=`pwd`
 # CPU Number
@@ -94,7 +96,7 @@ function check_sys(){
     tram=$( free -m | awk '/Mem/ {print $2}' )
     swap=$( free -m | awk '/Swap/ {print $2}' )
     up=$( awk '{a=$1/86400;b=($1%86400)/3600;c=($1%3600)/60;d=$1%60} {printf("%ddays, %d:%d:%d\n",a,b,c,d)}' /proc/uptime )
-    opsy=$( cat /etc/issue.net | awk 'NR==1 {print}' )
+    opsy=$( awk '{print ($1,$3~/^[0-9]/?$3:$4)}' /etc/redhat-release )
     arch=$( uname -m )
     lbit=$( getconf LONG_BIT )
     host=$( hostname )
@@ -144,14 +146,16 @@ function pre_installation_settings(){
     while true
     do
     echo "Please choose a version of the Database:"
-    echo -e "\t\033[32m1\033[0m. Install $MySQLVersion(recommend)"
-    echo -e "\t\033[32m2\033[0m. Install $MySQLVersion2"
-    echo -e "\t\033[32m3\033[0m. Install $MariaDBVersion"
-    echo -e "\t\033[32m4\033[0m. Install $MariaDBVersion2"
-    read -p "Please input a number:(Default 1) " DB_version
-    [ -z "$DB_version" ] && DB_version=1
+    echo -e "\t\033[32m1\033[0m. Install $MySQLVersion1"
+    echo -e "\t\033[32m2\033[0m. Install $MySQLVersion2(recommend)"
+    echo -e "\t\033[32m3\033[0m. Install $MySQLVersion3"
+    echo -e "\t\033[32m4\033[0m. Install $MariaDBVersion1"
+    echo -e "\t\033[32m5\033[0m. Install $MariaDBVersion2"
+    echo -e "\t\033[32m6\033[0m. Install $MariaDBVersion3"
+    read -p "Please input a number:(Default 2) " DB_version
+    [ -z "$DB_version" ] && DB_version=2
     case $DB_version in
-        1|2|3|4)
+        1|2|3|4|5|6)
         echo ""
         echo "---------------------------"
         echo "You choose = $DB_version"
@@ -160,7 +164,7 @@ function pre_installation_settings(){
         break
         ;;
         *)
-        echo "Input error! Please only input number 1,2,3,4"
+        echo "Input error! Please only input number 1-6"
     esac
     done
     # Set MySQL or MariaDB root password
@@ -172,32 +176,11 @@ function pre_installation_settings(){
     echo "Password = $dbrootpwd"
     echo "---------------------------"
     echo ""
-    if [ $DB_version -eq 1 -o $DB_version -eq 2 ]; then
-        # Define the MySQL data location.
-        echo "Please input the MySQL data location:"
-        read -p "(leave blank for /usr/local/mysql/data):" datalocation
-        [ -z "$datalocation" ] && datalocation="/usr/local/mysql/data"
-        echo ""
-        echo "---------------------------"
-        echo "Data location = $datalocation"
-        echo "---------------------------"
-        echo ""
-    elif [ $DB_version -eq 3 -o $DB_version -eq 4 ]; then
-        # Define the MariaDB data location.
-        echo "Please input the MariaDB data location:"
-        read -p "(leave blank for /usr/local/mariadb/data):" datalocation
-        [ -z "$datalocation" ] && datalocation="/usr/local/mariadb/data"
-        echo ""
-        echo "---------------------------"
-        echo "Data location = $datalocation"
-        echo "---------------------------"
-        echo ""
-    fi
     # Choose PHP version
     while true
     do
     echo "Please choose a version of the PHP:"
-    echo -e "\t\033[32m1\033[0m. Install $PHPVersion"
+    echo -e "\t\033[32m1\033[0m. Install $PHPVersion1"
     echo -e "\t\033[32m2\033[0m. Install $PHPVersion2"
     echo -e "\t\033[32m3\033[0m. Install $PHPVersion3(recommend)"
     echo -e "\t\033[32m4\033[0m. Install $PHPVersion4"
@@ -214,7 +197,7 @@ function pre_installation_settings(){
         break
         ;;
         *)
-        echo "Input error! Please only input number 1,2,3,4,5"
+        echo "Input error! Please only input number 1-5"
     esac
     done
 
@@ -257,17 +240,8 @@ function pre_installation_settings(){
 # Download all files
 function download_all_files(){
     cd $cur_dir
-    if [ $DB_version -eq 1 ]; then
-        download_file "${MySQLVersion}.tar.gz"
-    elif [ $DB_version -eq 2 ]; then
-        download_file "${MySQLVersion2}.tar.gz"
-    elif [ $DB_version -eq 3 ]; then
-        download_file "${MariaDBVersion}.tar.gz"
-    elif [ $DB_version -eq 4 ]; then
-        download_file "${MariaDBVersion2}.tar.gz"
-    fi
-    if [ $PHP_version -eq 1 ]; then
-        download_file "${PHPVersion}.tar.gz"
+    if   [ $PHP_version -eq 1 ]; then
+        download_file "${PHPVersion1}.tar.gz"
     elif [ $PHP_version -eq 2 ]; then
         download_file "${PHPVersion2}.tar.gz"
         download_file "php5.3.patch"
@@ -368,22 +342,16 @@ function install_apache(){
         cd /var/log
         rm -rf httpd/
         ln -s /usr/local/apache/logs httpd
-        groupadd apache
-        useradd -g apache apache
+        id -u apache >/dev/null 2>&1
+        [ $? -ne 0 ] && useradd -M -U -s /sbin/nologin apache
         mkdir -p /data/www/default/
         chmod -R 755 /data/www/default/
-        #Copy to config files
-        cp -f $cur_dir/conf/httpd2.4.conf /usr/local/apache/conf/httpd.conf
-        cp -f $cur_dir/conf/httpd-vhosts.conf /usr/local/apache/conf/extra/httpd-vhosts.conf
-        cp -f $cur_dir/conf/httpd-info.conf /usr/local/apache/conf/extra/httpd-info.conf
-        cp -f $cur_dir/conf/httpd-default.conf /usr/local/apache/conf/extra/httpd-default.conf
         mkdir -p /usr/local/apache/conf/vhost/
         touch /usr/local/apache/conf/vhost/none.conf
-        cp -f $cur_dir/conf/index.html /data/www/default/index.html
-        cp -f $cur_dir/conf/lamp.gif /data/www/default/lamp.gif
-        cp -f $cur_dir/conf/p.php /data/www/default/p.php
-        cp -f $cur_dir/conf/jquery.js /data/www/default/jquery.js
-        cp -f $cur_dir/conf/phpinfo.php /data/www/default/phpinfo.php
+        #Copy to config files
+        cp -f $cur_dir/conf/httpd2.4.conf /usr/local/apache/conf/httpd.conf
+        cp -f $cur_dir/conf/{httpd-vhosts.conf,httpd-info.conf,httpd-default.conf} /usr/local/apache/conf/extra/
+        cp -f $cur_dir/conf/{index.html,lamp.gif,p.php,jquery.js,phpinfo.php} /data/www/default/
         echo "${ApacheVersion} Install completed!"
     else
         echo "Apache had been installed!"
@@ -396,110 +364,56 @@ function install_database(){
         [ -z "`grep 'ulimit' /etc/profile`" ] && echo "ulimit -s unlimited" >> /etc/profile
         . /etc/profile
     fi
-    if [ $DB_version -eq 1 -o $DB_version -eq 2 ]; then
+    if [ $DB_version -le 3 ]; then
         install_mysql
-    elif [ $DB_version -eq 3 -o $DB_version -eq 4 ]; then
+    else
         install_mariadb
-    fi
-}
-
-# Set configuration file
-function set_database_conf(){
-    if [ $RamTotal -gt 1500 -a $RamTotal -le 2500 ]; then
-        sed -i 's@^key_buffer_size.*@key_buffer_size = 32M@' /etc/my.cnf
-        sed -i 's@^table_open_cache.*@table_open_cache = 128@' /etc/my.cnf
-        sed -i 's@^sort_buffer_size.*@sort_buffer_size = 1M@' /etc/my.cnf
-        sed -i 's@^read_buffer_size.*@read_buffer_size = 512K@' /etc/my.cnf
-        sed -i 's@^read_rnd_buffer_size.*@read_rnd_buffer_size = 1M@' /etc/my.cnf
-        sed -i 's@^myisam_sort_buffer_size.*@myisam_sort_buffer_size = 16M@' /etc/my.cnf
-        sed -i 's@^max_connections.*@max_connections = 512@' /etc/my.cnf
-    elif [ $RamTotal -gt 2500 -a $RamTotal -le 3500 ]; then
-        sed -i 's@^key_buffer_size.*@key_buffer_size = 64M@' /etc/my.cnf
-        sed -i 's@^table_open_cache.*@table_open_cache = 256@' /etc/my.cnf
-        sed -i 's@^sort_buffer_size.*@sort_buffer_size = 2M@' /etc/my.cnf
-        sed -i 's@^read_buffer_size.*@read_buffer_size = 1M@' /etc/my.cnf
-        sed -i 's@^read_rnd_buffer_size.*@read_rnd_buffer_size = 2M@' /etc/my.cnf
-        sed -i 's@^myisam_sort_buffer_size.*@myisam_sort_buffer_size = 32M@' /etc/my.cnf
-        sed -i 's@^max_connections.*@max_connections = 1024@' /etc/my.cnf
-    elif [ $RamTotal -gt 3500 ]; then
-        sed -i 's@^key_buffer_size.*@key_buffer_size = 128M@' /etc/my.cnf
-        sed -i 's@^table_open_cache.*@table_open_cache = 512@' /etc/my.cnf
-        sed -i 's@^sort_buffer_size.*@sort_buffer_size = 4M@' /etc/my.cnf
-        sed -i 's@^read_buffer_size.*@read_buffer_size = 2M@' /etc/my.cnf
-        sed -i 's@^read_rnd_buffer_size.*@read_rnd_buffer_size = 4M@' /etc/my.cnf
-        sed -i 's@^myisam_sort_buffer_size.*@myisam_sort_buffer_size = 64M@' /etc/my.cnf
-        sed -i 's@^max_connections.*@max_connections = 2048@' /etc/my.cnf
     fi
 }
 
 # Install mariadb database
 function install_mariadb(){
-    if [ ! -d /usr/local/mariadb ];then
-        # Install MariaDB
-        cd $cur_dir/
-        if [ $DB_version -eq 3 ]; then
-            echo "Start Installing ${MariaDBVersion}"
-            cd $cur_dir/untar/$MariaDBVersion
-        elif [ $DB_version -eq 4 ]; then
-            echo "Start Installing ${MariaDBVersion2}"
-            cd $cur_dir/untar/$MariaDBVersion2
-        fi
-        /usr/sbin/groupadd mysql
-        /usr/sbin/useradd -s /sbin/nologin -M -g mysql mysql
-        if [ ! -d $datalocation ]; then
-            mkdir -p $datalocation
-            chown -R mysql:mysql $datalocation
-        fi
-        # Compile MariaDB
-        cmake \
-        -DCMAKE_INSTALL_PREFIX=/usr/local/mariadb \
-        -DMYSQL_DATADIR=$datalocation \
-        -DMYSQL_UNIX_ADDR=/tmp/mysql.sock \
-        -DWITH_ARIA_STORAGE_ENGINE=1 \
-        -DWITH_XTRADB_STORAGE_ENGINE=1 \
-        -DWITH_ARCHIVE_STORAGE_ENGINE=1 \
-        -DWITH_INNOBASE_STORAGE_ENGINE=1 \
-        -DWITH_PARTITION_STORAGE_ENGINE=1 \
-        -DWITH_FEDERATEDX_STORAGE_ENGINE=1 \
-        -DWITH_BLACKHOLE_STORAGE_ENGINE=1 \
-        -DWITH_MYISAM_STORAGE_ENGINE=1 \
-        -DWITH_READLINE=1 \
-        -DENABLED_LOCAL_INFILE=1 \
-        -DDEFAULT_CHARSET=utf8 \
-        -DDEFAULT_COLLATION=utf8_general_ci \
-        -DWITH_EMBEDDED_SERVER=1
-        make -j $Cpunum
-        make install
-        if [ $? -ne 0 ]; then
-            echo "Installing MariaDB failed, Please visit https://lamp.sh/support.html and contact."
+    # Install MariaDB repo
+    if [ ! -f /etc/yum.repos.d/mariadb.repo ]; then
+        if [[ -s /etc/redhat-release ]]; then
+            [[ ! -z "`egrep -i 'CentOS' /etc/redhat-release`" ]] && maria_os='centos'
+            [[ ! -z "`egrep -i 'Fedora' /etc/redhat-release`" ]] && maria_os='fedora'
+            [[ ! -z "`egrep -i 'Red Hat' /etc/redhat-release`" ]] && maria_os='rhel'
+            version=$(grep -oE  "[0-9.]+" /etc/redhat-release)
+            maria_os_ver=${version%%.*}
+            if   [ $DB_version -eq 4 ]; then
+                maria_ver='5.5'
+            elif [ $DB_version -eq 5 ]; then
+                maria_ver='10.0'
+            elif [ $DB_version -eq 6 ]; then
+                maria_ver='10.1'
+            fi
+            if  [ "$lbit" == "64" ]; then
+                maria_bit='amd64'
+            else
+                maria_bit='x86'
+            fi
+            echo "[mariadb]" >> /etc/yum.repos.d/mariadb.repo
+            echo "name = MariaDB" >> /etc/yum.repos.d/mariadb.repo
+            echo "baseurl = http://yum.mariadb.org/${maria_ver}/${maria_os}${maria_os_ver}-${maria_bit}" >> /etc/yum.repos.d/mariadb.repo
+            echo "gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB" >> /etc/yum.repos.d/mariadb.repo
+            echo "gpgcheck=1" >> /etc/yum.repos.d/mariadb.repo
+        else
+            echo "File /etc/redhat-release is not exist, please check it and retry."
             exit 1
         fi
-        chmod +w /usr/local/mariadb
-        chown -R mysql:mysql /usr/local/mariadb
-        cp -f $cur_dir/conf/my.cnf /etc/my.cnf
-        # Set MariaDB configuration file
-        set_database_conf
-        cp support-files/mysql.server /etc/init.d/mysqld
-        sed -i "s:^datadir=.*:datadir=$datalocation:g" /etc/init.d/mysqld
-        chmod +x /etc/init.d/mysqld
-        chkconfig --add mysqld
-        chkconfig mysqld on
-        /usr/local/mariadb/scripts/mysql_install_db --defaults-file=/etc/my.cnf --basedir=/usr/local/mariadb --datadir=$datalocation --user=mysql
-        cat > /etc/ld.so.conf.d/mariadb.conf<<EOF
-/usr/local/mariadb/lib
-/usr/local/lib
-EOF
-        ldconfig
-        for i in `ls /usr/local/mariadb/bin`
-        do
-            if [ ! -L /usr/bin/$i ]; then
-                ln -s /usr/local/mariadb/bin/$i /usr/bin/$i
-            fi
-        done
-        # Start mysqld service
-        /etc/init.d/mysqld start
-        /usr/local/mariadb/bin/mysqladmin password $dbrootpwd
-        /usr/local/mariadb/bin/mysql -uroot -p$dbrootpwd <<EOF
+    else
+        echo "MariaDB repo already exist."
+    fi
+    # Yum install MariaDB
+    yum install -y MariaDB-server MariaDB-client
+    chmod +x /etc/init.d/mysql
+    chkconfig --add mysql
+    chkconfig mysql on
+    # Start MariaDB service
+    /etc/init.d/mysql start
+    mysqladmin password $dbrootpwd
+    mysql -uroot -p$dbrootpwd <<EOF
 drop database if exists test;
 delete from mysql.user where user='';
 update mysql.user set password=password('$dbrootpwd') where user='root';
@@ -507,81 +421,55 @@ delete from mysql.user where not (user='root') ;
 flush privileges;
 exit
 EOF
-        # Stop mysqld service
-        /etc/init.d/mysqld stop
-        echo "MariaDB Install completed!"
-    else
-        echo "MariaDB had been installed!"
-    fi
+    # Stop MariaDB service
+    /etc/init.d/mysql stop
+    echo "MariaDB Install completed!"
 }
 
 # Install mysql database
 function install_mysql(){
-    if [ ! -d /usr/local/mysql ];then
-        # Install MySQL
-        cd $cur_dir/
-        if [ $DB_version -eq 1 ]; then
-            echo "Start Installing ${MySQLVersion}"
-            cd $cur_dir/untar/$MySQLVersion
-        elif [ $DB_version -eq 2 ]; then
-            echo "Start Installing ${MySQLVersion2}"
-            cd $cur_dir/untar/$MySQLVersion2
-        fi
-        /usr/sbin/groupadd mysql
-        /usr/sbin/useradd -s /sbin/nologin -M -g mysql mysql
-        if [ ! -d $datalocation ]; then
-            mkdir -p $datalocation
-            chown -R mysql:mysql $datalocation
-        fi
-        # Compile MySQL
-        cmake \
-        -DCMAKE_INSTALL_PREFIX=/usr/local/mysql \
-        -DMYSQL_DATADIR=$datalocation \
-        -DMYSQL_UNIX_ADDR=/tmp/mysql.sock \
-        -DDEFAULT_CHARSET=utf8 \
-        -DDEFAULT_COLLATION=utf8_general_ci \
-        -DWITH_EXTRA_CHARSETS=complex \
-        -DWITH_INNOBASE_STORAGE_ENGINE=1 \
-        -DWITH_READLINE=1 \
-        -DENABLED_LOCAL_INFILE=1 \
-        -DWITH_PARTITION_STORAGE_ENGINE=1 \
-        -DWITH_FEDERATED_STORAGE_ENGINE=1 \
-        -DWITH_BLACKHOLE_STORAGE_ENGINE=1 \
-        -DWITH_MYISAM_STORAGE_ENGINE=1 \
-        -DWITH_EMBEDDED_SERVER=1
-        make -j $Cpunum
-        make install
-        if [ $? -ne 0 ]; then
-            echo "Installing MySQL failed, Please visit https://lamp.sh/support.html and contact."
+    # Install mysql community repo
+    if [ ! -f /etc/yum.repos.d/mysql-community.repo ]; then
+        if [[ -s /etc/redhat-release ]]; then
+            [[ ! -z "`egrep -i 'CentOS' /etc/redhat-release`" ]] && mysql_os='el'
+            [[ ! -z "`egrep -i 'Fedora' /etc/redhat-release`" ]] && mysql_os='fc'
+            [[ ! -z "`egrep -i 'Red Hat' /etc/redhat-release`" ]] && mysql_os='el'
+            version=$(grep -oE  "[0-9.]+" /etc/redhat-release)
+            mysql_os_ver=${version%%.*}
+            if   [ $DB_version -eq 1 ]; then
+                mysql_ver='5.5'
+            elif [ $DB_version -eq 2 ]; then
+                mysql_ver='5.6'
+            elif [ $DB_version -eq 3 ]; then
+                mysql_ver='5.7'
+            fi
+            echo "[mysql-community]" >> /etc/yum.repos.d/mysql-community.repo
+            echo "name=MySQL ${mysql_ver} Community Server" >> /etc/yum.repos.d/mysql-community.repo
+            echo "baseurl=http://repo.mysql.com/yum/mysql-${mysql_ver}-community/${mysql_os}/${mysql_os_ver}/\$basearch/" >> /etc/yum.repos.d/mysql-community.repo
+            echo "enabled=1" >> /etc/yum.repos.d/mysql-community.repo
+            echo "gpgcheck=0" >> /etc/yum.repos.d/mysql-community.repo
+        else
+            echo "File /etc/redhat-release is not exist, please check it and retry."
             exit 1
         fi
-        chmod +w /usr/local/mysql
-        chown -R mysql:mysql /usr/local/mysql
-        cd support-files/
-        cp -f $cur_dir/conf/my.cnf /etc/my.cnf
-        # Set MySQL configuration file
-        set_database_conf
-        cp -f mysql.server /etc/init.d/mysqld
-        sed -i "s:^datadir=.*:datadir=$datalocation:g" /etc/init.d/mysqld
-        /usr/local/mysql/scripts/mysql_install_db --defaults-file=/etc/my.cnf --basedir=/usr/local/mysql --datadir=$datalocation --user=mysql
-        chmod +x /etc/init.d/mysqld
-        chkconfig --add mysqld
-        chkconfig  mysqld on
-        cat > /etc/ld.so.conf.d/mysql.conf<<EOF
-/usr/local/mysql/lib
-/usr/local/lib
-EOF
-        ldconfig
-        for i in `ls /usr/local/mysql/bin`
-        do
-            if [ ! -L /usr/bin/$i ]; then
-                ln -s /usr/local/mysql/bin/$i /usr/bin/$i
-            fi
-        done
-        # Start mysqld service
-        /etc/init.d/mysqld start
-        /usr/local/mysql/bin/mysqladmin password $dbrootpwd
-        /usr/local/mysql/bin/mysql -uroot -p$dbrootpwd <<EOF
+    else
+        echo "mysql community repo already exist."
+    fi
+    yum install -y mysql-community-server
+    chmod +x /etc/init.d/mysqld
+    chkconfig --add mysqld
+    chkconfig mysqld on
+    # Start mysql community service
+    /etc/init.d/mysqld start
+    if [ $DB_version -eq 3 ]; then
+        # Display temporary password
+        dbrootpwd=$(grep 'temporary password' /var/log/mysqld.log | awk -F: '{print $4}' | sed 's/^[ \t]*//;s/[ \t]*$//')
+        echo "For MySQL 5.7 only: A temporary password is generated for root@localhost"
+        echo "For MySQL 5.7 only: A temporary password is:${dbrootpwd}"
+    else
+        mysqladmin password $dbrootpwd
+    fi
+    mysql -uroot -p$dbrootpwd <<EOF
 drop database if exists test;
 delete from mysql.user where user='';
 update mysql.user set password=password('$dbrootpwd') where user='root';
@@ -589,33 +477,38 @@ delete from mysql.user where not (user='root') ;
 flush privileges;
 exit
 EOF
-        # Stop mysqld service
-        /etc/init.d/mysqld stop
-        echo "MySQL Install completed!"
-    else
-        echo "MySQL had been installed!"
-    fi
+    # Stop mysql community service
+    /etc/init.d/mysqld stop
+    echo "MySQL Install completed!"
 }
 
 #Install pcre dependency
 function install_pcre(){
-    cd $cur_dir/untar/$pcreVersion
-    ./configure --prefix=/usr/local/pcre
-    make && make install
-    if is_64bit; then
-        ln -s /usr/local/pcre/lib /usr/local/pcre/lib64
+    if [ ! -d /usr/local/pcre ]; then
+        cd $cur_dir/untar/$pcreVersion
+        ./configure --prefix=/usr/local/pcre
+        make && make install
+        if is_64bit; then
+            ln -s /usr/local/pcre/lib /usr/local/pcre/lib64
+        fi
+        [ -d "/usr/local/pcre/lib" ] && export LD_LIBRARY_PATH=/usr/local/pcre/lib:$LD_LIBRARY_PATH
+        [ -d "/usr/local/pcre/bin" ] && export PATH=/usr/local/pcre/bin:$PATH
+        echo "${pcreVersion} install completed!"
+    else
+        echo "pcre had been installed!"
     fi
-    [ -d "/usr/local/pcre/lib" ] && export LD_LIBRARY_PATH=/usr/local/pcre/lib:$LD_LIBRARY_PATH
-    [ -d "/usr/local/pcre/bin" ] && export PATH=/usr/local/pcre/bin:$PATH
-    echo "${pcreVersion} install completed!"
 }
 
 # Install libiconv dependency
 function install_libiconv(){
-    cd $cur_dir/untar/$libiconvVersion
-    ./configure --prefix=/usr/local/libiconv
-    make && make install
-    echo "${libiconvVersion} install completed!"
+    if [ ! -d /usr/local/libiconv ]; then
+        cd $cur_dir/untar/$libiconvVersion
+        ./configure --prefix=/usr/local/libiconv
+        make && make install
+        echo "${libiconvVersion} install completed!"
+    else
+        echo "libiconv had been installed!"
+    fi
 }
 
 # Install libmcrypt dependency
@@ -716,22 +609,12 @@ function install_php(){
     if [ ! -d /usr/local/php ];then
         echo "Start Installing PHP"
         # database compile dependency
-        if [ $DB_version -eq 1 -o $DB_version -eq 2 ]; then
-            if [ $PHP_version -eq 5 ]; then
-                WITH_MYSQL=""
-                WITH_MYSQLI="--with-mysqli=/usr/local/mysql/bin/mysql_config"
-            else
-                WITH_MYSQL="--with-mysql=/usr/local/mysql"
-                WITH_MYSQLI="--with-mysqli=/usr/local/mysql/bin/mysql_config"
-            fi
-        elif [ $DB_version -eq 3 -o $DB_version -eq 4 ]; then
-            if [ $PHP_version -eq 5 ]; then
-                WITH_MYSQL=""
-                WITH_MYSQLI="--with-mysqli=/usr/local/mariadb/bin/mysql_config"
-            else
-                WITH_MYSQL="--with-mysql=/usr/local/mariadb"
-                WITH_MYSQLI="--with-mysqli=/usr/local/mariadb/bin/mysql_config"
-            fi
+        if [ $PHP_version -eq 5 ]; then
+            WITH_MYSQL=""
+            WITH_MYSQLI="--with-mysqli=mysqlnd"
+        else
+            WITH_MYSQL="--with-mysql=mysqlnd"
+            WITH_MYSQLI="--with-mysqli=mysqlnd"
         fi
         # ldap module dependency 
         if is_64bit; then
@@ -758,8 +641,8 @@ function install_php(){
                 WITH_ICU_DIR="--with-icu-dir=/usr/local"
             fi
         fi
-        if [ $PHP_version -eq 1 ]; then
-            cd $cur_dir/untar/$PHPVersion
+        if   [ $PHP_version -eq 1 ]; then
+            cd $cur_dir/untar/$PHPVersion1
         elif [ $PHP_version -eq 2 ]; then
             cd $cur_dir/untar/$PHPVersion2
             # Add PHP5.3 patch
@@ -779,7 +662,7 @@ function install_php(){
         $WITH_MYSQLI \
         --with-pcre-dir=/usr/local/pcre \
         --with-iconv-dir=/usr/local/libiconv \
-        --with-mysql-sock=/tmp/mysql.sock \
+        --with-mysql-sock=/var/lib/mysql/mysql.sock \
         --with-config-file-scan-dir=/usr/local/php/php.d \
         --with-mhash=/usr \
         $WITH_ICU_DIR \
@@ -834,7 +717,7 @@ function install_php(){
         fi
         mkdir -p /usr/local/php/etc
         mkdir -p /usr/local/php/php.d
-        if [ $PHP_version -eq 1 ]; then
+        if   [ $PHP_version -eq 1 ]; then
             mkdir -p /usr/local/php/lib/php/extensions/no-debug-non-zts-20100525
         elif [ $PHP_version -eq 2 ]; then
             mkdir -p /usr/local/php/lib/php/extensions/no-debug-non-zts-20090626
@@ -866,10 +749,15 @@ function install_phpmyadmin(){
     cd $cur_dir
     mv untar/$phpMyAdminVersion /data/www/default/phpmyadmin
     cp -f $cur_dir/conf/config.inc.php /data/www/default/phpmyadmin/config.inc.php
-    # Start mysqld service
-    /etc/init.d/mysqld start
+    # Start mysql service
+    if [ $DB_version -le 3 ]; then
+        /etc/init.d/mysqld start
+    else
+        /etc/init.d/mysql start
+    fi
     # Create phpmyadmin database
     mysql -uroot -p$dbrootpwd < /data/www/default/phpmyadmin/sql/create_tables.sql
+    mysql -uroot -p$dbrootpwd -e "INSERT INTO \`phpmyadmin\`.\`pma__userconfig\` VALUES ('root',now(),'{\"VersionCheck\":false,\"collation_connection\":\"utf8mb4_unicode_ci\"}');"
     chmod -R 755 /data/www/default/phpmyadmin
     mkdir -p /data/www/default/phpmyadmin/upload/
     mkdir -p /data/www/default/phpmyadmin/save/
@@ -896,32 +784,34 @@ function install_cleanup(){
 
     clear
     # Install completed or not 
-    if [ -s /usr/local/apache ] && [ -s /usr/local/php ] && [ -s /usr/local/mysql -o -s /usr/local/mariadb ]; then
+    if [ -s /usr/local/apache ] && [ -s /usr/local/php ] && [ -s /var/lib/mysql ]; then
         echo ""
         echo 'Congratulations, LAMP install completed!'
         echo "Your Default Website: http://${IP}"
         echo 'Default WebSite Root Dir: /data/www/default'
         echo 'Apache Dir: /usr/local/apache'
         echo 'PHP Dir: /usr/local/php'
-        if [ $DB_version -eq 1 -o $DB_version -eq 2 ]; then
+        if [ $DB_version -le 3 ]; then
             echo "MySQL root password:$dbrootpwd"
-            echo "MySQL data location:$datalocation"
-        elif [ $DB_version -eq 3 -o $DB_version -eq 4 ]; then
+        else
             echo "MariaDB root password:$dbrootpwd"
-            echo "MariaDB data location:$datalocation"
         fi
         echo -e "Installed Apache version:\033[41;37m ${ApacheVersion} \033[0m"
-        if [ $DB_version -eq 1 ]; then
-            echo -e "Installed MySQL version:\033[41;37m ${MySQLVersion} \033[0m"
+        if   [ $DB_version -eq 1 ]; then
+            echo -e "Installed MySQL version:\033[41;37m ${MySQLVersion1} \033[0m"
         elif [ $DB_version -eq 2 ]; then
             echo -e "Installed MySQL version:\033[41;37m ${MySQLVersion2} \033[0m"
         elif [ $DB_version -eq 3 ]; then
-            echo -e "Installed MariaDB version:\033[41;37m ${MariaDBVersion} \033[0m"
+            echo -e "Installed MySQL version:\033[41;37m ${MySQLVersion3} \033[0m"
         elif [ $DB_version -eq 4 ]; then
+            echo -e "Installed MariaDB version:\033[41;37m ${MariaDBVersion1} \033[0m"
+        elif [ $DB_version -eq 5 ]; then
             echo -e "Installed MariaDB version:\033[41;37m ${MariaDBVersion2} \033[0m"
+        elif [ $DB_version -eq 6 ]; then
+            echo -e "Installed MariaDB version:\033[41;37m ${MariaDBVersion3} \033[0m"
         fi
-        if [ $PHP_version -eq 1 ]; then
-            echo -e "Installed PHP version:\033[41;37m ${PHPVersion} \033[0m"
+        if   [ $PHP_version -eq 1 ]; then
+            echo -e "Installed PHP version:\033[41;37m ${PHPVersion1} \033[0m"
         elif [ $PHP_version -eq 2 ]; then
             echo -e "Installed PHP version:\033[41;37m ${PHPVersion2} \033[0m"
         elif [ $PHP_version -eq 3 ]; then
@@ -981,23 +871,11 @@ function uninstall_lamp(){
 
     if [[ "$uninstall" = "y" || "$uninstall" = "Y" ]]; then
         /etc/init.d/httpd stop
-        /etc/init.d/mysqld stop
         chkconfig --del httpd
-        chkconfig --del mysqld
+        [ -e /etc/init.d/mysqld ] && /etc/init.d/mysqld stop && chkconfig --del mysqld && yum remove -y mysql-community-*
+        [ -e /etc/init.d/mysql ] && /etc/init.d/mysql stop && chkconfig --del mysql && yum remove -y MariaDB-*
         rm -rf /etc/init.d/httpd /usr/local/apache /usr/sbin/httpd /usr/sbin/apachectl /var/log/httpd /var/lock/subsys/httpd /var/spool/mail/apache /etc/logrotate.d/httpd
-        if [ -d /usr/local/mysql ]; then
-            for tmp1 in `ls /usr/local/mysql/bin`
-            do
-                rm -f /usr/bin/$tmp1
-            done
-        fi
-        if [ -d /usr/local/mariadb ]; then
-            for tmp2 in `ls /usr/local/mariadb/bin`
-            do
-                rm -f /usr/bin/$tmp2
-            done
-        fi
-        rm -rf /usr/local/mysql /usr/local/mariadb /usr/lib64/mysql /usr/lib/mysql /etc/my.cnf /etc/init.d/mysqld /etc/ld.so.conf.d/mysql.conf /etc/ld.so.conf.d/mariadb.conf /var/lock/subsys/mysql
+        rm -rf /var/lib/mysql /var/lib64/mysql/ /etc/my.cnf 
         rm -rf /usr/local/php /usr/lib/php /usr/bin/php /usr/bin/php-config /usr/bin/phpize /etc/php.ini
         rm -rf /data/www/default/phpmyadmin
         rm -rf /data/www/default/xcache
